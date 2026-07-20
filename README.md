@@ -1,5 +1,7 @@
 # AWS Serverless Infrastructure Lab
 
+[![Terraform validation](https://github.com/LanxiangZhangAlex/syadmin-homework/actions/workflows/terraform-validate.yml/badge.svg)](https://github.com/LanxiangZhangAlex/syadmin-homework/actions/workflows/terraform-validate.yml)
+
 A local, reproducible infrastructure-as-code project that provisions a small serverless AWS architecture with Terraform and LocalStack. It demonstrates API integration, event-driven processing, storage, and infrastructure testing without requiring a paid cloud environment.
 
 > Portfolio note: this repository began as a technical exercise. The implementation runs against LocalStack; production AWS deployment would require additional security, state, and operational controls.
