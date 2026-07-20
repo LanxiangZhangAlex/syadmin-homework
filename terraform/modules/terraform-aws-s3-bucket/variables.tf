@@ -8,8 +8,8 @@ variable "force_destroy" {
 }
 
 variable "tags" {
-  type        = map(string)
-  default     = null
+  type    = map(string)
+  default = null
 }
 
 variable "policies" {
