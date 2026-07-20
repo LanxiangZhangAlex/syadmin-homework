@@ -1,6 +1,6 @@
 locals {
   py_file_name = "py_rendered_file"
-  handler        = "${local.py_file_name}.${var.handler_function}"
+  handler      = "${local.py_file_name}.${var.handler_function}"
 }
 
 resource "aws_lambda_function" "py_lambda_function" {
@@ -23,14 +23,4 @@ resource "aws_lambda_function" "py_lambda_function" {
   tags = merge(var.tags, {
     Name = var.function_name
   })
-
-
-  lifecycle {
-    ignore_changes = [
-      # always auto-published by lambda
-      qualified_arn,
-      qualified_invoke_arn
-    ]
-  }
 }
-
