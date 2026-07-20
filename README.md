@@ -1,97 +1,98 @@
-# 1oT sysadmin homework
+# AWS Serverless Infrastructure Lab
 
-1) Add another HTTP endpoint that serves a file from an S3 bucket. Create the S3 bucket with Terraform. You can use the [provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) directly or use `modules/terraform-aws-s3-bucket`.
+A local, reproducible infrastructure-as-code project that provisions a small serverless AWS architecture with Terraform and LocalStack. It demonstrates API integration, event-driven processing, storage, and infrastructure testing without requiring a paid cloud environment.
 
-2) Fill `private_subnets` variable with values given the VPC configuration above in the file. There should be three blocks.
+> Portfolio note: this repository began as a technical exercise. The implementation runs against LocalStack; production AWS deployment would require additional security, state, and operational controls.
 
-There are two options for the 3rd task, choose one. 
+## What this project demonstrates
 
-1) Make the Localstack depend on [Docker-in-Docker](https://hub.docker.com/_/docker) container socket instead of the Docker running on your local machine.
-2) Add an API that serves text content from DynamoDB table using Lambda.
+- Terraform modules for AWS-style services
+- Local cloud development with Docker Compose and LocalStack
+- API Gateway integration with Lambda
+- DynamoDB and S3 provisioning
+- Repeatable infrastructure initialization and validation
+- Practical debugging of service endpoints, dependencies, and deployment order
 
-Finally, commit (git) your work to the same repository and send it back via public repo link or email. Please add some documentation in MD format to accompany the changes in code.
+## Architecture
 
-## Prepare the environment
+```mermaid
+flowchart LR
+    Client[Client] --> API[API Gateway]
+    API --> Lambda[Lambda function]
+    Lambda --> DB[(DynamoDB)]
+    Lambda --> S3[(S3 bucket)]
+    TF[Terraform] --> API
+    TF --> Lambda
+    TF --> DB
+    TF --> S3
+    LS[LocalStack] --- API
+```
 
-First, build Docker images locally and run detached
+## Repository layout
 
-    docker-compose up --build --detach
+| Path | Purpose |
+| --- | --- |
+| `docker-compose.yml` | LocalStack development environment |
+| `terraform/` | Providers, variables, resources, modules, and outputs |
+| `localstack/` | Local service initialization |
+| `tfrunner/` | Terraform execution helper |
 
-Then, enter the worker container
+## Prerequisites
 
-    docker exec -it tfrunner-cnt bash -l
+- Docker with Docker Compose
+- Terraform
+- AWS CLI
+- curl or another HTTP client
 
-Verify that you have the necessary tools
+## Quick start
 
-    terraform --version
-    aws --version
+Start the local AWS-compatible environment:
 
-Go to the bind mount folder containing project files. Note that the files are always in sync between the host and the container.
+```bash
+docker compose up -d
+docker compose ps
+```
 
-    cd /mnt/terraform
+Initialize and inspect the infrastructure:
 
-Initialize the backend state file on S3
+```bash
+cd terraform
+terraform init
+terraform fmt -check
+terraform validate
+terraform plan
+terraform apply
+```
 
-    terraform init -upgrade \
-        -backend-config=endpoint="http://localstack:4566" \
-        -backend-config=access_key="myrootaccesskeyid" \
-        -backend-config=secret_key="myrootsecretaccesskey" \
-        -backend-config=bucket="1ot-platform-state-local" \
-        -backend-config=key="tfstate.json" \
-        -backend-config=region="eu-west-3" \
-        -backend-config=skip_credentials_validation=true \
-        -backend-config=skip_metadata_api_check=true \
-        -backend-config=skip_region_validation=true \
-        -backend-config=force_path_style=true
+Use the Terraform outputs to test the API endpoint, then inspect the Lambda, DynamoDB, and S3 resources through LocalStack. When finished:
 
-Create Terraform plan
+```bash
+terraform destroy
+cd ..
+docker compose down
+```
 
-    terraform plan -out .terraform/tf-plan.out
-    
-Apply the plan
+## Validation checklist
 
-    terraform apply ".terraform/tf-plan.out"
+- `docker compose ps` shows LocalStack healthy
+- `terraform fmt -check` passes
+- `terraform validate` passes
+- `terraform plan` contains only expected changes
+- API requests return the expected response
+- DynamoDB and S3 resources are created in LocalStack
+- Reapplying the configuration is idempotent
 
-You should see an URL to test the ApiGW endpoint
+## Design decisions
 
-    curl -X GET http://localstack:4566/restapis/d6ww3oe8ml/test/_user_request_/ -vv
+- **LocalStack for fast feedback:** the project is testable without cloud cost or shared credentials.
+- **Terraform for repeatability:** infrastructure changes are versioned, reviewable, and reproducible.
+- **Modular resource layout:** service definitions are easier to reason about and extend.
+- **Explicit outputs:** endpoints and resource identifiers are available for smoke tests and automation.
 
-And the API will reply `Cheers from AWS Lambda!!`.
+## Production hardening
 
-Now you can proceed to the task.
+For production AWS use, I would add a remote encrypted state backend with locking, least-privilege IAM, Secrets Manager or Parameter Store, Lambda logging and alarms, tracing, API authorization and throttling, encryption controls, CI policy and security scanning, environment separation, backups, and rollback/runbook documentation.
 
-## Additional info
+## Skills demonstrated
 
-There are two containers running in Compose:
-- Localstack emulates the AWS endpoints. When you destroy the localstack container, all AWS resources are lost.
-- tfrunner is an Ubuntu machine to contain the work environment, so you would only need Docker to run the project.
-- Terraform state file is in `1ot-platform-state-local`. 
-- You can also use awscli on tfrunner for testing, but the homework is designed so it wouldn't be necessary.
-
-### Helpers
-
-    docker-compose up -d --no-deps --build localstack # to build only the localstack
-
-    terraform show # prints the current resources (from state)
-
-## Changes Made
-
-### Task 1: HTTP Endpoint for S3 Bucket
-- Added an HTTP endpoint `/file` that serves a file from an S3 bucket.
-- Created an S3 bucket named `lxz_bucket` using Terraform.
-- Uploaded a file named `lxz-file.txt` to the S3 bucket from the local path `terraform/files/example.txt`.
-
-### Task 2: Private Subnets Configuration
-- Filled the `private_subnets` variable in `local.auto.tfvars` with the following values:
-  ```hcl
-  private_subnets = [
-    "10.90.8.192/26",  # First private subnet
-    "10.90.8.128/26",  # Second private subnet
-    "10.90.8.64/26"    # Third private subnet
-  ]
-  ```
-
-### Task 3: API for DynamoDB
-- Added an API endpoint `/text` that serves text content from a DynamoDB table using a Lambda function.
-- Created a DynamoDB table named `TextTable` with a primary key `id`.
-- Implemented a Lambda function that retrieves an item from the DynamoDB table based on the `id`.
+AWS · Terraform · LocalStack · Docker Compose · API Gateway · Lambda · DynamoDB · S3 · Infrastructure as Code
