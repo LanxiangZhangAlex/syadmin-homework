@@ -48,7 +48,12 @@ resource "aws_api_gateway_deployment" "webserver-deployment" {
     aws_api_gateway_integration.webserver-integration,
     aws_api_gateway_integration.lambda_root
   ]
-  stage_name = "test"
+}
+
+resource "aws_api_gateway_stage" "test" {
+  deployment_id = aws_api_gateway_deployment.webserver-deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.webserver-api.id
+  stage_name    = "test"
 }
 
 resource "aws_lambda_permission" "lambda_permission" {
@@ -100,5 +105,5 @@ resource "aws_api_gateway_integration" "text_integration" {
   http_method             = aws_api_gateway_method.text_method.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.text_function.invoke_arn
+  uri                     = module.webserver_lambda.invoke_arn
 }
